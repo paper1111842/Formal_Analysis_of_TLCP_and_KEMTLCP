@@ -68,7 +68,7 @@ query cr:random, sr:random,
       event(CompromisedSessionID(sid)).
 
 
-(* Main appData secrecy query: every disjunct is required *)
+(* Main secrecy query: every disjunct is required *)
 
 query cr:random, sr:random, sid:sessionID,
       sp:pubkey, ep:pubkey, ms:bitstring, aek:ae_key,
