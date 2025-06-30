@@ -1,0 +1,102 @@
+
+(********************************************************)
+(*  Sanity Queries: should all be false  *)
+(********************************************************)
+
+query cr:random, sr:random,
+      sid:sessionID,sp:pubkey,ep:pubkey,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(OWClientFinished(TLCP11,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,sp:pubkey,ep:pubkey,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(OWServerFinished(TLCP11,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,sp:pubkey,ep:pubkey,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(OWClientFinished(TLCP11,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)) ==>
+      event(OWServerFinished(TLCP11,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,o:params, m:params,
+      ck:ae_key, sk:ae_key, ms:bitstring;
+      event(SRClientFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,o:params, m:params,
+      ck:ae_key, sk:ae_key, ms:bitstring;
+      event(SRServerFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,o:params, m:params,
+      ck:ae_key, sk:ae_key, ms:bitstring;
+      event(SRServerFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)) ==>
+      event(SRClientFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)).
+
+
+(* Triple handshake risk query *)
+
+query cr:random, sr:random, sp:pubkey, ep:pubkey, cr':random, sr':random, sp':pubkey, ep':pubkey;
+      event(TripleHandshakeRisk(TLCP11,cr,sr,sp,ep,TLCP11,cr',sr',sp',ep')).
+
+
+(* Main authentication query: every disjunct is required; commenting any of them results in "false" *)
+(* Replay prevention relies on the recipient not accepting 2 messages with the same (n,ad); it is not explicitly proved in ProVerif. *)
+
+query cr:random, sr:random, cr':random, sr':random,
+      sid:sessionID, sp:pubkey, ep:pubkey, n:bitstring, ad:bitstring, m:bitstring;
+      event(OWClientReceives(TLCP11,cr,sr,NoSID,sp,ep,n,ad,m)) ==>
+      event(OWServerSends(TLCP11,cr,sr,NoSID,sp,ep,n,ad,m)) ||
+      event(WeakOrCompromisedKey(sp,ep)) ||
+      event(ServerChoosesAE(cr,sr,sp,ep,TLCP11,WeakAE)) ||
+      event(ServerChoosesKEX(cr',sr',sp,ep,TLCP11,RSA(WeakRSADecryption))) ||
+      event(ServerChoosesHash(cr',sr',sp,ep,TLCP11,WeakHash)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,o:params, m:params,
+      ck:ae_key, sk:ae_key, ms:bitstring;
+      event(SRServerFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)) ==>
+      event(SRClientFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)) ||
+      event(CompromisedSessionID(sid)).
+
+
+(* Main appData secrecy query: every disjunct is required *)
+
+query cr:random, sr:random, sid:sessionID,
+      sp:pubkey, ep:pubkey, ms:bitstring, aek:ae_key,
+      ra:rsa_alg, s2a:sm2_alg, s9a:sm9_alg,
+      cb:bitstring, cr':random, sr':random, v:version;
+      attacker(ow_m_c(TLCP11,cr,sr,sp,ep,sid)) ==>
+      event(WeakOrCompromisedKey(sp,ep)) ||
+      (event(PostSessionCompromisedKey(sp,ep)) &&
+       event(ServerChoosesKEX(cr,sr,sp,ep,TLCP11,RSA(ra))))  ||
+      (event(PostSessionCompromisedKey(sp,ep)) &&
+       event(ServerChoosesKEX(cr,sr,sp,ep,TLCP11,ECC(s2a))))  ||
+      (event(PostSessionCompromisedKey(sp,ep)) &&
+       event(ServerChoosesKEX(cr,sr,sp,ep,TLCP11,IBC(s9a))))  ||
+      event(ServerChoosesAE(cr,sr,sp,ep,TLCP11,WeakAE)) ||
+      event(ServerChoosesKEX(cr',sr',sp,ep,TLCP11,RSA(WeakRSADecryption)))  ||
+      event(ServerChoosesHash(cr',sr',sp,ep,TLCP11,WeakHash)).
+
+
+query cr:random, sr:random, sid:sessionID,
+      v:version;
+      attacker(sr_m_c(TLCP11,cr,sid)) ==>
+      event(CompromisedSessionID(sid)).
+
+
+process
+	!OW_Client11() | !OW_Server11() |
+	!SR_Client11() | !SR_Server11() |
+	!longTermKeys() | !secrecyQuery() |
+	!channelBindingQuery() | !appData()
+
+
