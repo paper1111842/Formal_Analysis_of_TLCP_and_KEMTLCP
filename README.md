@@ -17,9 +17,20 @@ Source code files:
 
 
 ### Verify the security goals
-You can run './proverif' + '-lib libraryname' + 'filename.pv' to specific which process you want to analyze. 
-They use the library tlcp-lib.pvl provided above.
+Using the library tlcp-lib.pvl provided above, the `.pv` files corresponding to various processes of the protocol should be run by the command:
 
 ```
 PROJECTROOTDIR> ./proverif -lib tlcp-lib <filename>
 ```
+
+### Understanding the results
+
+To understand the results, look in the PV file. Roughly, the "true" queries correspond to security goals like (Forward) Secrecy, Authentication, Replay Prevention, and Integrity.  The "false" queries correspond to queries that we expect to fail; they show that our verification is tight, disabling some of the conditions in our "true" queries would cause them to be false.
+
+In addition, you can also output the attack trace search results in a specified folder using the following code:
+
+```
+PROJECTROOTDIR> ./proverif -lib tlcp-lib -html "<folderaddress>" <filename>
+```
+
+This can generate result files in various formats (e.g. pdf) including text descriptions and image presentations, such as
