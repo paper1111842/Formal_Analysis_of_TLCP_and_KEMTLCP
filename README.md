@@ -30,7 +30,9 @@ To understand the results, look in the PV file. Roughly, the "true" queries corr
 In addition, you can also output the attack trace search results in a specified folder using the following code:
 
 ```
-PROJECTROOTDIR> ./proverif -lib tlcp-lib -html "<folderaddress>" <filename>
+PROJECTROOTDIR> ./proverif -lib tlcp-lib -html <folderpath> <filename>
 ```
 
 This can generate result files in various formats (e.g. pdf) including text descriptions and image presentations, such as
+
+
