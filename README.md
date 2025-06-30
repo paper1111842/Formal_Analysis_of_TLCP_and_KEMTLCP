@@ -18,7 +18,7 @@ Source code files:
 
 ### Verify the security goals
 You can run './proverif' + '-lib libraryname' + 'filename.pv' to specific which process you want to analyze. 
-They use the library tls-lib.pvl provided above.
+They use the library tlcp-lib.pvl provided above.
 
 ```
 PROJECTROOTDIR> ./proverif -lib tlcp-lib <filename>
