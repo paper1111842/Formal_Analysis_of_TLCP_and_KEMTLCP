@@ -36,4 +36,4 @@ PROJECTROOTDIR> ./proverif -lib tlcp-lib -html <folderpath> <filename>
 This can generate result files in various formats (e.g. pdf) including text descriptions and image presentations, such as
 
 
-![trace1](https://github.com/paper1111842/Formal_Analysis_of_TLCP_and_KEMTLCP/blob/main/trace1.pdf)
+![trace1](https://github.com/paper1111842/Formal_Analysis_of_TLCP_and_KEMTLCP/blob/main/trace1.png)
