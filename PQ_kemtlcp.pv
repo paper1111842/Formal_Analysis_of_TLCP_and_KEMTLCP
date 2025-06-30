@@ -1,0 +1,48 @@
+
+(********************************************************)
+(*  Sanity Queries: should all be false  *)
+(********************************************************)
+
+query cr:random, sr:random,
+      sid:sessionID,sp:kempub,ep:kempub,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(PQClientFinished(KEMTLCP,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,sp:kempub,ep:kempub,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(PQServerFinished(KEMTLCP,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,sp:kempub,ep:kempub,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(PQClientFinished(KEMTLCP,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)) ==>
+      event(PQServerFinished(KEMTLCP,cr,sr,sid,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+(* Main authentication query: every disjunct is required; commenting any of them results in "false" *)
+(* Replay prevention relies on the recipient not accepting 2 messages with the same (n,ad); it is not explicitly proved in ProVerif. *)
+
+query cr:random, sr:random, cr':random, sr':random,
+      sid:sessionID, sp:kempub,ep:kempub, n:bitstring, ad:bitstring, m:bitstring;
+      event(PQClientReceives(KEMTLCP,cr,sr,PSK,sp,ep,n,ad,m)) ==>
+      event(PQServerSends(KEMTLCP,cr,sr,PSK,sp,ep,n,ad,m)) ||
+      event(PQWeakOrCompromisedKey(sp,ep)).
+
+
+(* Main secrecy query: every disjunct is required *)
+
+query cr:random, sr:random, sid:sessionID,
+      sp:kempub,ep:kempub, ms:bitstring, aek:ae_key,
+      cb:bitstring, cr':random, sr':random, v:version;
+      attacker(pq_m_c(KEMTLCP,cr,sr,sp,ep,sid)) ==>
+      event(PQWeakOrCompromisedKey(sp,ep)).
+
+
+process
+	!PQ_Client() | !PQ_Server() |
+	!longTermKeys() | !appData()
+
+

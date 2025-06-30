@@ -1,0 +1,79 @@
+
+(********************************************************)
+(*  Sanity Queries: should all be false  *)
+(********************************************************)
+
+query cr:random, sr:random,
+      sid:sessionID,csp:pubkey,cep:pubkey,sp:pubkey,ep:pubkey,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(MuClientFinished(TLCP11,cr,sr,sid,csp,cep,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,csp:pubkey,cep:pubkey,sp:pubkey,ep:pubkey,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(MuServerFinished(TLCP11,cr,sr,sid,csp,cep,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,csp:pubkey,cep:pubkey,sp:pubkey,ep:pubkey,o:params, m:params,
+      ck:ae_key, sk:ae_key, cb:bitstring, ms:bitstring;
+      event(MuClientFinished(TLCP11,cr,sr,sid,csp,cep,sp,ep,m,o,ck,sk,cb,ms)) ==>
+      event(MuServerFinished(TLCP11,cr,sr,sid,csp,cep,sp,ep,m,o,ck,sk,cb,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,o:params, m:params,
+      ck:ae_key, sk:ae_key, ms:bitstring;
+      event(SRClientFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,o:params, m:params,
+      ck:ae_key, sk:ae_key, ms:bitstring;
+      event(SRServerFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)).
+
+
+query cr:random, sr:random,
+      sid:sessionID,o:params, m:params,
+      ck:ae_key, sk:ae_key, ms:bitstring;
+      event(SRServerFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)) ==>
+      event(SRClientFinished(TLCP11,cr,sr,sid,m,o,ck,sk,ms)).
+
+
+(* Main authentication query: every disjunct is required; commenting any of them results in "false" *)
+(* Replay prevention relies on the recipient not accepting 2 messages with the same (n,ad); it is not explicitly proved in ProVerif. *)
+
+query cr:random, sr:random, cr':random, sr':random,
+      sid:sessionID, sp:pubkey, ep:pubkey, n:bitstring, ad:bitstring, m:bitstring;
+      event(MuClientReceives(TLCP11,cr,sr,NoSID,sp,ep,n,ad,m)) ==>
+      event(MuServerSends(TLCP11,cr,sr,NoSID,sp,ep,n,ad,m)) ||
+      event(WeakOrCompromisedKey(sp,ep)) ||
+      event(ServerChoosesAE(cr,sr,sp,ep,TLCP11,WeakAE)) ||
+      event(ServerChoosesKEX(cr',sr',sp,ep,TLCP11,RSA(WeakRSADecryption))) ||
+      event(ServerChoosesHash(cr',sr',sp,ep,TLCP11,WeakHash)).
+
+(* Main secrecy query: every disjunct is required *)
+
+query cr:random, sr:random, sid:sessionID,
+      sp:pubkey, ep:pubkey, ms:bitstring, aek:ae_key,
+      ra:rsa_alg, s2a:sm2_alg, s9a:sm9_alg,
+      cb:bitstring, cr':random, sr':random, v:version;
+      attacker(mu_m_c(TLCP11,cr,sr,sp,ep,sid)) ==>
+      event(WeakOrCompromisedKey(sp,ep)) ||
+      (event(PostSessionCompromisedKey(sp,ep)) &&
+       event(ServerChoosesKEX(cr,sr,sp,ep,TLCP11,RSA(ra))))  ||
+      (event(PostSessionCompromisedKey(sp,ep)) &&
+       event(ServerChoosesKEX(cr,sr,sp,ep,TLCP11,ECC(s2a))))  ||
+      (event(PostSessionCompromisedKey(sp,ep)) &&
+       event(ServerChoosesKEX(cr,sr,sp,ep,TLCP11,IBC(s9a))))  ||
+      event(ServerChoosesAE(cr,sr,sp,ep,TLCP11,WeakAE)) ||
+      event(ServerChoosesKEX(cr',sr',sp,ep,TLCP11,RSA(WeakRSADecryption)))  ||
+      event(ServerChoosesHash(cr',sr',sp,ep,TLCP11,WeakHash)).
+
+
+process
+	!Mu_Client11() | !Mu_Server11() |
+	!SR_Client11() | !SR_Server11() |
+	!longTermKeys() | !secrecyQuery() |
+	!channelBindingQuery() | !appData()
